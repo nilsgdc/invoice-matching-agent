@@ -41,20 +41,3 @@ def process_without_agent(path):
     alerts = verify_invoice(invoice, path, text, supplier, purchase_order, pairing)
     return decide(alerts), alerts
 
-
-if __name__ == "__main__":
-    from pathlib import Path
-
-    import yaml
-
-    root = Path(__file__).parent
-    cases = yaml.safe_load((root / "data" / "invoices.yaml").read_text(encoding="utf-8"))
-    correct = 0
-    for case in cases:
-        name = f"invoice_{case['id']:02d}"
-        extension = ".pdf" if case["format"] == "pdf" else ".txt"
-        decision, alerts = process_without_agent(root / "data" / "invoices" / (name + extension))
-        verdict = "OK  " if decision == case["expected_decision"] else "FAIL"
-        correct += decision == case["expected_decision"]
-        print(f"{verdict} {name} | {decision} (expected: {case['expected_decision']}) | {alerts} | {case['scenario']}")
-    print(f"Correct decisions: {correct}/{len(cases)}")
