@@ -16,7 +16,11 @@ INSTRUCTIONS = """You are an accounts payable matching agent. You are given a su
 Your task: find in the ERP the supplier and the purchase order that correspond to this invoice, then pair each invoice line with the purchase order line for the same item, even when the labels are worded differently.
 Method: search for the supplier by name. If the invoice quotes a purchase order number, read that purchase order. Otherwise list the open purchase orders of the supplier, then read those whose amount or items correspond.
 You only search and pair: you do not decide whether the invoice should be paid.
-If no purchase order matches, answer with po_number set to null."""
+If no purchase order matches, answer with po_number set to null.
+Always give your final answer by calling the SearchResult tool, never as plain text."""
+
+REMINDER = "Give your final answer now by calling the SearchResult tool."
+MAX_ATTEMPTS = 3
 
 MCP_CLIENT = MultiServerMCPClient({
     "erp": {"transport": "stdio", "command": sys.executable,
@@ -28,13 +32,21 @@ async def find_purchase_order_async(invoice):
     """Run the agent against the MCP server. Returns a SearchResult, or None if it gave up."""
     async with MCP_CLIENT.session("erp") as session:
         tools = await load_mcp_tools(session)
+        # checkpointer=False: called from a graph node, the agent would otherwise inherit the parent's
+        # synchronous SQLite checkpointer and fail on its first async call.
         agent = create_agent(langchain_model(), tools, system_prompt=INSTRUCTIONS,
-                             response_format=ToolStrategy(SearchResult))
+                             response_format=ToolStrategy(SearchResult), checkpointer=False)
+        messages = [{"role": "user", "content": "Here is the invoice:\n" + invoice.model_dump_json(indent=2)}]
         try:
-            result = await agent.ainvoke(
-                {"messages": [{"role": "user", "content": "Here is the invoice:\n" + invoice.model_dump_json(indent=2)}]},
-                config={"recursion_limit": 20},   # hard stop: at most 20 steps in the agent loop
-            )
+            for attempt in range(MAX_ATTEMPTS):
+                result = await agent.ainvoke(
+                    {"messages": messages},
+                    config={"recursion_limit": 20},   # hard stop: at most 20 steps in the agent loop
+                )
+                if result.get("structured_response") is not None:
+                    break
+                # The model sometimes ends on a sentence instead of the answer tool: ask again, keeping the history.
+                messages = result["messages"] + [{"role": "user", "content": REMINDER}]
         except GraphRecursionError:
             return None
     for message in result["messages"]:   # trace of every tool call, with its arguments
