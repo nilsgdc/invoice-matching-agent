@@ -1,5 +1,7 @@
 # Invoice matching agent
 
+[![tests](https://github.com/nilsgdc/invoice-matching-agent/actions/workflows/tests.yml/badge.svg)](https://github.com/nilsgdc/invoice-matching-agent/actions/workflows/tests.yml)
+
 An agent that matches French supplier invoices against purchase orders and goods receipts. It posts what is safe to post, rejects what is clearly wrong, and hands everything else to an accountant with a short brief.
 
 It is a small end-to-end project: 12 test invoices, a mock ERP in SQLite and a model running locally with Ollama. I built it to learn how to put an LLM inside a process where a mistake costs money. Most of the work went into what surrounds the model: checks written in plain code, a narrow role for the agent, a human in the loop and an evaluation that runs in one command.
