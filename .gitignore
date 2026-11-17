@@ -1,0 +1,12 @@
+.venv/
+.env
+
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Mock ERP: it changes during a run, create_erp.py rebuilds it
+data/erp.db
+
+# LangGraph checkpoints
+data/checkpoints.db

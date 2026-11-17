@@ -1,0 +1,25 @@
+# Rules of the three-way match: invoice, purchase order, goods receipt.
+# The business can change them without touching the code.
+
+tolerances:
+  unit_price_variance_pct: 2.0      # accepted price gap on each line, in % of the ordered price
+  quantity_variance: 0              # no unit invoiced beyond the quantity received
+  vat_rounding_eur: 0.02            # accepted rounding gap between the total and the sum of its parts
+
+thresholds:
+  human_review_amount_excl_vat_eur: 10000   # above this amount a human decides, even if everything matches
+
+# Decision imposed by each alert.
+# When several alerts are raised the strictest wins: reject, then human_review.
+alerts:
+  unknown_supplier: human_review
+  po_not_found: human_review
+  price_variance: human_review
+  quantity_variance: human_review
+  high_amount: human_review
+  iban_changed: human_review
+  suspicious_instruction: human_review
+  duplicate: reject
+  vat_error: reject
+  doubtful_extraction: human_review
+  item_not_ordered: human_review
