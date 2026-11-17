@@ -1,10 +1,15 @@
 import os
+import sys
 
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from openai import APIConnectionError, OpenAI
 
 load_dotenv()
+
+# Model output can contain characters the Windows console cannot encode: a print must never crash a run.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")
 
 MODEL = os.getenv("LLM_MODEL")
 
