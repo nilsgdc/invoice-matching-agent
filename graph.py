@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from analysis import analyze_case
 from baseline import find_supplier, pair_by_label
+from checks import check_document
 from erp import get_purchase_order, get_supplier, post_invoice
 from extraction import extract_invoice, read_document
 from matching import decide, verify_invoice
@@ -37,7 +38,8 @@ def extract(state):
     try:
         invoice = extract_invoice(text)
     except ValidationError:   # unreadable extraction: record the alert, the routing stops the graph
-        return {"text": text, "alerts": ["doubtful_extraction"], "decision": "human_review"}
+        alerts = sorted(["doubtful_extraction"] + check_document(state["path"], text))
+        return {"text": text, "alerts": alerts, "decision": "human_review"}
     return {"text": text, "invoice": invoice.model_dump(mode="json")}
 
 
@@ -75,7 +77,7 @@ def verify(state):
     """The checks and the decision are plain code: the model never decides."""
     invoice = Invoice.model_validate(state["invoice"])
     pairing = {position: line for position, line in enumerate(state["po_lines"]) if line}
-    alerts = verify_invoice(invoice, state["text"], state["supplier"], state["purchase_order"], pairing)
+    alerts = verify_invoice(invoice, state["path"], state["text"], state["supplier"], state["purchase_order"], pairing)
     return {"alerts": alerts, "decision": decide(alerts)}
 
 

@@ -1,4 +1,4 @@
-from checks import RULES, compact, run_checks
+from checks import RULES, check_document, compact, run_checks
 from erp import invoice_already_posted
 
 PRICE_TOLERANCE = RULES["tolerances"]["unit_price_variance_pct"]
@@ -29,11 +29,11 @@ def compare_to_purchase_order(invoice, purchase_order, pairing):
     return alerts
 
 
-def verify_invoice(invoice, text, supplier, purchase_order, pairing):
+def verify_invoice(invoice, path, text, supplier, purchase_order, pairing):
     """Run every verification and return the alerts, deduplicated and in a stable order."""
     if purchase_order is not None and supplier is not None and purchase_order["supplier_id"] != supplier["id"]:
         purchase_order = None   # an order placed with another supplier does not count
-    alerts = run_checks(invoice, text)
+    alerts = run_checks(invoice, text) + check_document(path, text)
     if invoice.total_excl_vat > AMOUNT_THRESHOLD:
         alerts.append("high_amount")
     if supplier is None:

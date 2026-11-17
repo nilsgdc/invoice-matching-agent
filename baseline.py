@@ -4,6 +4,7 @@ The purchase order must be quoted on the invoice and the item labels must match 
 """
 from pydantic import ValidationError
 
+from checks import check_document
 from erp import get_purchase_order, search_suppliers
 from extraction import extract_invoice, read_document
 from matching import decide, verify_invoice
@@ -33,11 +34,11 @@ def process_without_agent(path):
     try:
         invoice = extract_invoice(text)
     except ValidationError:   # unreadable extraction: when in doubt a human decides
-        return "human_review", ["doubtful_extraction"]
+        return "human_review", sorted(["doubtful_extraction"] + check_document(path, text))
     supplier = find_supplier(invoice.supplier)
     purchase_order = get_purchase_order(invoice.po_number) if invoice.po_number else None
     pairing = pair_by_label(invoice, purchase_order) if purchase_order else {}
-    alerts = verify_invoice(invoice, text, supplier, purchase_order, pairing)
+    alerts = verify_invoice(invoice, path, text, supplier, purchase_order, pairing)
     return decide(alerts), alerts
 
 

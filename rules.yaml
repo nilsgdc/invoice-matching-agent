@@ -9,6 +9,16 @@ tolerances:
 thresholds:
   human_review_amount_excl_vat_eur: 10000   # above this amount a human decides, even if everything matches
 
+# Signs that a document talks to the software instead of a human reader.
+hidden_text:
+  min_font_size_pt: 5               # below this size a human cannot read the text
+
+suspicious_patterns:                # case-insensitive regular expressions, in French and in English
+  - "assistant (ia|ai)|ai assistant|language model|modèle de langage"
+  - "ignore[rz]? .{0,30}(contrôles|consignes|instructions|règles|checks|rules)"
+  - "pré-approuvée?|pre-approved"
+  - "(comptabilise|approuve|valide|approve|post)\\S* .{0,20}(immédiatement|automatiquement|immediately|automatically)"
+
 # Decision imposed by each alert.
 # When several alerts are raised the strictest wins: reject, then human_review.
 alerts:
